@@ -2,7 +2,7 @@
 
 ## 🏆 Resultados Atuais
 
-**Última Atualização:** 2026-01-29 20:48:08
+**Última Atualização:** 2026-01-29 20:51:27
 
 | Time | Real | Enzo | Rafael Lima | Julio | Pedro | Luca | Rafael Roloff | Victor | Queiroz |
 |------|------|------|------|------|------|------|------|------|------|
@@ -132,7 +132,7 @@ Bônus adicionais:
 **Pontuação total máxima possível:** 400 pontos
 
 **Pontuação final normalizada:**
-`pontuação_normalizada = (pontuação_total - 200) / 2`
+`pontuação_normalAizada = (pontuação_total - 200) / 2`
 O resultado final sempre estará entre 0 e 100.
 
 ## 📈 Histórico e Gráficos

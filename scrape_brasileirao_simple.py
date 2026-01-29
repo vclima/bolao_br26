@@ -816,7 +816,7 @@ class BrasileiroScraper:
                 medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
                 bonus = bonus_points.get(player, 0)
                 bonus_tag = f" (+{bonus})" if bonus in (3, 6) else ""
-                results_table.append(f"{medal} **{player}**{bonus_tag}:<br>{norm_score} pontos")
+                results_table.append(f"{medal} **{player}**{bonus_tag}: {norm_score} pontos<br>")
 
             # Calculate current round first
             current_round = self.get_current_round(actual_standings)

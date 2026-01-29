@@ -330,6 +330,56 @@ class BrasileiroScraper:
         deviation = abs(predicted_pos - actual_pos)
         score = max(0, 20 - deviation)  # Minimum score is 0
         return score
+
+    def normalize_score(self, raw_score, min_score=200, max_score=406):
+        """Normalize raw score to 0-100 scale using configured min/max"""
+        if raw_score is None:
+            raw_score = 0
+        if max_score <= min_score:
+            return 0
+        normalized = round((raw_score - min_score) * 100 / (max_score - min_score))
+        return max(0, min(100, normalized))
+
+    def calculate_bonus_points(self, actual_standings, predictions):
+        """Calculate bonus points (+3 champion, +3 bottom four) per player"""
+        bonus_points = {player: 0 for player in predictions.keys()}
+
+        actual_by_position = {}
+        for team_data in actual_standings:
+            try:
+                position = int(team_data.get('position'))
+            except (TypeError, ValueError):
+                continue
+            actual_by_position[position] = self.normalize_team_name(team_data.get('team', ''))
+
+        actual_first_team = actual_by_position.get(1)
+        actual_bottom_four = {
+            actual_by_position.get(17),
+            actual_by_position.get(18),
+            actual_by_position.get(19),
+            actual_by_position.get(20),
+        }
+        actual_bottom_four.discard(None)
+
+        for player, player_predictions in predictions.items():
+            # Champion bonus
+            predicted_first_team = player_predictions.get('1') or player_predictions.get(1)
+            if predicted_first_team:
+                predicted_first_team = self.normalize_team_name(predicted_first_team)
+            if actual_first_team and predicted_first_team == actual_first_team:
+                bonus_points[player] += 3
+
+            # Bottom four bonus (3 or more correct among positions 17-20)
+            predicted_bottom_four = set()
+            for pos in range(17, 21):
+                predicted_team = player_predictions.get(str(pos)) or player_predictions.get(pos)
+                if predicted_team:
+                    predicted_bottom_four.add(self.normalize_team_name(predicted_team))
+
+            if actual_bottom_four and len(predicted_bottom_four.intersection(actual_bottom_four)) >= 3:
+                bonus_points[player] += 3
+
+        return bonus_points
     
     def compare_predictions(self, actual_standings, predictions):
         """Compare predictions with actual standings and calculate scores"""
@@ -380,47 +430,16 @@ class BrasileiroScraper:
             print()
 
         # Bonus points: 3 points for correct 1st place and 3 points for hitting 3 of the last 4
-        actual_by_position = {}
-        for team_data in actual_standings:
-            try:
-                position = int(team_data.get('position'))
-            except (TypeError, ValueError):
-                continue
-            actual_by_position[position] = self.normalize_team_name(team_data.get('team', ''))
-
-        actual_first_team = actual_by_position.get(1)
-        actual_bottom_four = {
-            actual_by_position.get(17),
-            actual_by_position.get(18),
-            actual_by_position.get(19),
-            actual_by_position.get(20),
-        }
-        actual_bottom_four.discard(None)
-
-        for player, player_predictions in predictions.items():
-            # Champion bonus
-            predicted_first_team = player_predictions.get('1') or player_predictions.get(1)
-            if predicted_first_team:
-                predicted_first_team = self.normalize_team_name(predicted_first_team)
-            if actual_first_team and predicted_first_team == actual_first_team:
-                raw_scores[player] += 3
-
-            # Bottom four bonus (3 or more correct among positions 17-20)
-            predicted_bottom_four = set()
-            for pos in range(17, 21):
-                predicted_team = player_predictions.get(str(pos)) or player_predictions.get(pos)
-                if predicted_team:
-                    predicted_bottom_four.add(self.normalize_team_name(predicted_team))
-
-            if actual_bottom_four and len(predicted_bottom_four.intersection(actual_bottom_four)) >= 3:
-                raw_scores[player] += 3
+        bonus_points = self.calculate_bonus_points(actual_standings, predictions)
+        for player, bonus in bonus_points.items():
+            raw_scores[player] += bonus
         
         # Display final scores
         print("-" * 120)
         print(f"{'FINAL SCORES:':<20} {'':>8}", end="")
         player_scores = {}
         for player in predictions.keys():
-            norm_score = max(0, min(100, round((raw_scores.get(player, 0) - 200) / 2)))
+            norm_score = self.normalize_score(raw_scores.get(player, 0))
             player_scores[player] = norm_score
             print(f"{norm_score:<12}", end="")
         print()
@@ -735,7 +754,7 @@ class BrasileiroScraper:
             # Calculate normalized scores for graph
             normalized_scores = {}
             for player, score in raw_scores.items():
-                normalized_scores[player] = max(0, min(100, round((score - 200) / 2)))
+                normalized_scores[player] = self.normalize_score(score)
 
             # Generate the results table
             results_table = []
@@ -791,10 +810,13 @@ class BrasileiroScraper:
             results_table.append("")
             results_table.append("### 🏅 Classificação Final (pontuação normalizada 0-100)")
             results_table.append("")
+            bonus_points = self.calculate_bonus_points(actual_standings, predictions)
             for i, (player, score) in enumerate(sorted_players, 1):
-                norm_score = max(0, min(100, round((score - 200) / 2)))
+                norm_score = self.normalize_score(score)
                 medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-                results_table.append(f"{medal} **{player}**: {norm_score} pontos")
+                bonus = bonus_points.get(player, 0)
+                bonus_tag = f" (+{bonus})" if bonus in (3, 6) else ""
+                results_table.append(f"{medal} **{player}**{bonus_tag}: {norm_score} pontos")
 
             # Calculate current round first
             current_round = self.get_current_round(actual_standings)

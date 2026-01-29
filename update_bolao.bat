@@ -113,7 +113,7 @@ if errorlevel 1 (
     git push origin main
     if errorlevel 1 (
         echo ERRO: Falha ao fazer push. Verifique se o repositorio remoto esta configurado.
-        echo Execute: git remote add origin https://github.com/vclima/bolao_br25.git
+        echo Execute: git remote add origin https://github.com/vclima/bolao_br26.git
         pause
         exit /b 1
     )

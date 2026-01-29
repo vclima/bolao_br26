@@ -2,7 +2,7 @@
 
 ## 🏆 Resultados Atuais
 
-**Última Atualização:** 2026-01-29 20:41:05
+**Última Atualização:** 2026-01-29 20:48:08
 
 | Time | Real | Enzo | Rafael Lima | Julio | Pedro | Luca | Rafael Roloff | Victor | Queiroz |
 |------|------|------|------|------|------|------|------|------|------|
@@ -30,14 +30,14 @@
 
 ### 🏅 Classificação Final (pontuação normalizada 0-100)
 
-🥇 **Enzo**: 38 pontos
-🥈 **Rafael Lima**: 37 pontos
-🥉 **Julio**: 33 pontos
-4. **Pedro**: 33 pontos
-5. **Luca**: 31 pontos
-6. **Rafael Roloff**: 31 pontos
-7. **Victor**: 26 pontos
-8. **Queiroz**: 26 pontos
+🥇 **Enzo**: 37 pontos
+🥈 **Rafael Lima**: 36 pontos
+🥉 **Julio**: 32 pontos
+4. **Pedro**: 32 pontos
+5. **Luca**: 30 pontos
+6. **Rafael Roloff**: 30 pontos
+7. **Victor**: 25 pontos
+8. **Queiroz**: 25 pontos
 
 ### 📈 Histórico de Desempenho
 
@@ -45,7 +45,7 @@
 
 | Rodada | Enzo | Rafael Lima | Julio | Pedro | Luca | Rafael Roloff | Victor | Queiroz |
 |-------|-------|-------|-------|-------|-------|-------|-------|-------|
-| R1 | 38 | 37 | 33 | 33 | 31 | 31 | 26 | 26 |
+| R1 | 37 | 36 | 32 | 32 | 30 | 30 | 25 | 25 |
 
 **Tendência (últimas 2 medições):**
 

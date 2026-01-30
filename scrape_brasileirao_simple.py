@@ -808,7 +808,7 @@ class BrasileiroScraper:
             
             # Add ranking (pontuação normalizada)
             results_table.append("")
-            results_table.append("### 🏅 Classificação Final (pontuação normalizada 0-100)")
+            results_table.append("### 🏅 Classificação Atual (pontuação normalizada 0-100)")
             results_table.append("")
             bonus_points = self.calculate_bonus_points(actual_standings, predictions)
             for i, (player, score) in enumerate(sorted_players, 1):

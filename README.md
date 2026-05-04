@@ -2,7 +2,7 @@
 
 ## 🏆 Resultados Atuais
 
-**Última Atualização:** 2026-05-04 11:06:46
+**Última Atualização:** 2026-05-04 11:10:53
 
 | Time | Real | Enzo | Rafael Lima | Rafael Campos | Pedro | Julio | Rafael Roloff | Queiroz | Victor | Luca |
 |------|------|------|------|------|------|------|------|------|------|------|
@@ -54,19 +54,19 @@
 | R10 | 50 | 50 | 50 | 45 | 44 | 45 | 44 | 41 | 43 |
 | R11 | 51 | 50 | 51 | 46 | 46 | 47 | 46 | 40 | 45 |
 | R12 | 56 | 49 | 50 | 50 | 47 | 47 | 46 | 39 | 43 |
-| R13 | 39 | 34 | 33 | 34 | 32 | 31 | 26 | 28 | 30 |
+| R13 | 56 | 49 | 50 | 50 | 47 | 47 | 46 | 39 | 43 |
 | R14 | 52 | 48 | 48 | 46 | 44 | 44 | 42 | 39 | 39 |
 
 **Tendência (últimas 2 medições):**
-- **Enzo**: 📈 +13
-- **Rafael Lima**: 📈 +14
-- **Rafael Campos**: 📈 +15
-- **Pedro**: 📈 +12
-- **Julio**: 📈 +12
-- **Rafael Roloff**: 📈 +13
-- **Queiroz**: 📈 +16
-- **Victor**: 📈 +11
-- **Luca**: 📈 +9
+- **Enzo**: 📉 -4
+- **Rafael Lima**: 📉 -1
+- **Rafael Campos**: 📉 -2
+- **Pedro**: 📉 -4
+- **Julio**: 📉 -3
+- **Rafael Roloff**: 📉 -3
+- **Queiroz**: 📉 -4
+- **Victor**: ➡️ =0
+- **Luca**: 📉 -4
 
 ## 🎯 Sistema de Pontuação
 

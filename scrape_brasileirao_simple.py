@@ -58,6 +58,100 @@ class BrasileiroScraper:
             print(f"Error fetching {url}: {e}")
             return None
     
+    def scrape_cbf_standings(self, team_match_map=None):
+        """Scrape standings from CBF official website"""
+        url = "https://www.cbf.com.br/futebol-brasileiro/tabelas/campeonato-brasileiro/serie-a/2026"
+        
+        print("Fetching standings from CBF official website...")
+        html_content = self.fetch_url(url)
+        
+        if not html_content:
+            return None
+        
+        teams = []
+        
+        # Look for table rows - CBF uses table structure
+        table_pattern = r'<tr[^>]*>.*?</tr>'
+        rows = re.findall(table_pattern, html_content, re.DOTALL | re.IGNORECASE)
+        
+        position = 1
+        for row in rows:
+            # Skip header rows containing 'th>' or 'Classificação'
+            if '<th>' in row or 'Classificação' in row:
+                continue
+            
+            # Extract all cells from the row
+            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL | re.IGNORECASE)
+            
+            if len(cells) < 2:
+                continue
+            
+            # First cell contains position and team info (with HTML)
+            first_cell = cells[0]
+            
+            # Extract team name from link - look for the team name in <strong> tag
+            team_match = re.search(r'<strong>([^<]+)</strong>(?!.*<strong>)', first_cell)
+            if not team_match:
+                # Try alternative pattern
+                team_links = re.findall(r'<a[^>]*>\s*<strong>([^<]+)</strong>', first_cell)
+                if not team_links:
+                    continue
+                team_name = team_links[-1].strip()  # Get the last strong tag (the team name)
+            else:
+                team_name = team_match.group(1).strip()
+            
+            # Normalize the team name
+            team_name = re.sub(r'\s+', ' ', team_name).strip()
+            if team_name and len(team_name) > 2:
+                if team_match_map:
+                    team_key = self.normalize_team_key(team_name)
+                    if team_key in team_match_map:
+                        team_name = team_match_map[team_key]
+                
+                # Clean all cells
+                clean_cells = []
+                for cell in cells:
+                    clean_text = re.sub(r'<[^>]+>', '', cell).strip()
+                    # Remove special characters and extra whitespace
+                    clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+                    clean_cells.append(clean_text)
+                
+                # Extract points (first numeric cell after team)
+                # In CBF table: Position, PTS, J, V, E, D, GP, GC, SG, CA, CV, %
+                if len(clean_cells) >= 2:
+                    try:
+                        # Points should be in the second cell (index 1)
+                        points_str = clean_cells[1] if len(clean_cells) > 1 else '0'
+                        # Games should be in the third cell (index 2)
+                        games_str = clean_cells[2] if len(clean_cells) > 2 else '0'
+                        
+                        # Make sure they are numeric and valid
+                        if not points_str.isdigit():
+                            continue
+                        if not games_str.isdigit():
+                            games_str = '0'
+                        
+                        points = int(points_str)
+                        games = int(games_str)
+                        
+                        # Validate: points shouldn't exceed 114 (38 games * 3 points max)
+                        # and games shouldn't exceed 38
+                        if 0 <= points <= 114 and 0 <= games <= 38:
+                            teams.append({
+                                'position': position,
+                                'team': team_name,
+                                'points': str(points),
+                                'games': str(games)
+                            })
+                            position += 1
+                            
+                            if position > 20:  # Brasileirão has 20 teams
+                                break
+                    except (ValueError, IndexError):
+                        continue
+        
+        return teams if teams else None
+
     def scrape_espn_standings(self, team_match_map=None):
         """Scrape standings from ESPN Brazil"""
         url = "https://www.espn.com.br/futebol/liga/_/nome/bra.1"
@@ -226,6 +320,7 @@ class BrasileiroScraper:
         
         # Try multiple sources in order of reliability
         sources = [
+            ("CBF Official", lambda: self.scrape_cbf_standings(team_match_map)),
             ("ESPN Brazil", lambda: self.scrape_espn_standings(team_match_map)),
             ("Gazeta Esportiva", lambda: self.scrape_gazeta_standings(team_match_map)),
         ]

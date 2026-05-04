@@ -345,11 +345,12 @@ class BrasileiroScraper:
         # Clean up the team name
         team_name = team_name.strip()
         
-        # Handle common variations
+        # Handle common variations - maps to the format used in bolao.json
         name_mappings = {
             'Red Bull Bragantino': 'Bragantino',
             'RB Bragantino': 'Bragantino',
             'Vasco da Gama': 'Vasco',
+            'Vasco da Gama Saf': 'Vasco',
             'Atlético-MG': 'Atlético-MG',
             'Atlético Mineiro': 'Atlético-MG',
             'Atletico-MG': 'Atlético-MG',
@@ -360,8 +361,15 @@ class BrasileiroScraper:
             'Red Bull Salzburg': 'Bragantino',  # Just in case
             'Sao Paulo': 'São Paulo',
             'Sao-Paulo': 'São Paulo',
+            'São Paulo': 'São Paulo',
             'Vitoria': 'Vitória',
+            'Vitória': 'Vitória',
             'Gremio': 'Grêmio',
+            'Grêmio': 'Grêmio',
+            'Santos Fc': 'Santos',
+            'Santos FC': 'Santos',
+            'Coritiba SAF': 'Coritiba',
+            'Coritiba': 'Coritiba',
         }
         
         # Check direct mappings
@@ -400,12 +408,14 @@ class BrasileiroScraper:
 
         variant_map = {
             'Bragantino': ['Red Bull Bragantino', 'RB Bragantino'],
-            'Vasco': ['Vasco da Gama'],
+            'Vasco': ['Vasco da Gama', 'Vasco da Gama Saf'],
             'Atlético-MG': ['Atlético Mineiro', 'Atletico-MG'],
             'Atlético-PR': ['Athletico-PR', 'Athletico Paranaense', 'Atletico-PR'],
             'São Paulo': ['Sao Paulo', 'Sao-Paulo'],
             'Vitória': ['Vitoria'],
             'Grêmio': ['Gremio'],
+            'Santos': ['Santos Fc', 'Santos FC'],
+            'Coritiba': ['Coritiba SAF'],
         }
 
         for team in teams:

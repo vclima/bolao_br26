@@ -10,6 +10,7 @@ import urllib.request
 import urllib.parse
 import ssl
 import re
+import html
 from datetime import datetime
 import base64
 import unicodedata
@@ -58,6 +59,77 @@ class BrasileiroScraper:
             print(f"Error fetching {url}: {e}")
             return None
     
+    def parse_cbf_standings_html(self, html_content, team_match_map=None):
+        """Parse standings rows from the CBF table using the actual HTML structure."""
+        if not html_content:
+            return None
+
+        decoded_html = html.unescape(html_content)
+        decoded_html = decoded_html.replace('<br>', '\n').replace('<br/>', '\n').replace('<br />', '\n')
+
+        section_match = re.search(r'<h2>GRUPO ÚNICO</h2>.*?<tbody[^>]*>(.*?)</tbody>', decoded_html, re.IGNORECASE | re.DOTALL)
+        if not section_match:
+            return None
+
+        tbody = section_match.group(1)
+        rows = re.findall(r'<tr[^>]*>(.*?)</tr>', tbody, re.IGNORECASE | re.DOTALL)
+
+        teams = []
+        for row in rows:
+            if 'styles_teamPosition__CFIvz' not in row:
+                continue
+
+            position_match = re.search(r'<strong[^>]*class="[^"]*styles_position[^>]*">\s*(\d+)\s*</strong>', row)
+            if not position_match:
+                continue
+
+            position = int(position_match.group(1))
+            team_name_match = re.search(r'<strong[^>]*class="[^"]*styles_teamName[^>]*">([^<]+)</strong>', row)
+            if not team_name_match:
+                continue
+
+            team_name = re.sub(r'\s+', ' ', team_name_match.group(1)).strip()
+            if not team_name or len(team_name) <= 2:
+                continue
+
+            if team_match_map:
+                team_key = self.normalize_team_key(team_name)
+                if team_key in team_match_map:
+                    team_name = team_match_map[team_key]
+
+            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.IGNORECASE | re.DOTALL)
+            clean_cells = []
+            for cell in cells:
+                clean_text = re.sub(r'<[^>]+>', ' ', cell)
+                clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+                clean_cells.append(clean_text)
+
+            points = None
+            games = None
+            for cell in clean_cells[1:3]:
+                if cell.isdigit():
+                    if points is None:
+                        points = int(cell)
+                    elif games is None:
+                        games = int(cell)
+                        break
+
+            if points is None or games is None:
+                continue
+
+            if 0 <= points <= 114 and 0 <= games <= 38:
+                teams.append({
+                    'position': position,
+                    'team': self.normalize_team_name(team_name),
+                    'points': str(points),
+                    'games': str(games)
+                })
+
+            if len(teams) >= 20:
+                break
+
+        return teams if teams else None
+
     def scrape_cbf_standings(self, team_match_map=None):
         """Scrape standings from CBF official website"""
         url = "https://www.cbf.com.br/futebol-brasileiro/tabelas/campeonato-brasileiro/serie-a/2026"
@@ -67,90 +139,8 @@ class BrasileiroScraper:
         
         if not html_content:
             return None
-        
-        teams = []
-        
-        # Look for table rows - CBF uses table structure
-        table_pattern = r'<tr[^>]*>.*?</tr>'
-        rows = re.findall(table_pattern, html_content, re.DOTALL | re.IGNORECASE)
-        
-        position = 1
-        for row in rows:
-            # Skip header rows containing 'th>' or 'Classificação'
-            if '<th>' in row or 'Classificação' in row:
-                continue
-            
-            # Extract all cells from the row
-            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL | re.IGNORECASE)
-            
-            if len(cells) < 2:
-                continue
-            
-            # First cell contains position and team info (with HTML)
-            first_cell = cells[0]
-            
-            # Extract team name from link - look for the team name in <strong> tag
-            team_match = re.search(r'<strong>([^<]+)</strong>(?!.*<strong>)', first_cell)
-            if not team_match:
-                # Try alternative pattern
-                team_links = re.findall(r'<a[^>]*>\s*<strong>([^<]+)</strong>', first_cell)
-                if not team_links:
-                    continue
-                team_name = team_links[-1].strip()  # Get the last strong tag (the team name)
-            else:
-                team_name = team_match.group(1).strip()
-            
-            # Normalize the team name
-            team_name = re.sub(r'\s+', ' ', team_name).strip()
-            if team_name and len(team_name) > 2:
-                if team_match_map:
-                    team_key = self.normalize_team_key(team_name)
-                    if team_key in team_match_map:
-                        team_name = team_match_map[team_key]
-                
-                # Clean all cells
-                clean_cells = []
-                for cell in cells:
-                    clean_text = re.sub(r'<[^>]+>', '', cell).strip()
-                    # Remove special characters and extra whitespace
-                    clean_text = re.sub(r'\s+', ' ', clean_text).strip()
-                    clean_cells.append(clean_text)
-                
-                # Extract points (first numeric cell after team)
-                # In CBF table: Position, PTS, J, V, E, D, GP, GC, SG, CA, CV, %
-                if len(clean_cells) >= 2:
-                    try:
-                        # Points should be in the second cell (index 1)
-                        points_str = clean_cells[1] if len(clean_cells) > 1 else '0'
-                        # Games should be in the third cell (index 2)
-                        games_str = clean_cells[2] if len(clean_cells) > 2 else '0'
-                        
-                        # Make sure they are numeric and valid
-                        if not points_str.isdigit():
-                            continue
-                        if not games_str.isdigit():
-                            games_str = '0'
-                        
-                        points = int(points_str)
-                        games = int(games_str)
-                        
-                        # Validate: points shouldn't exceed 114 (38 games * 3 points max)
-                        # and games shouldn't exceed 38
-                        if 0 <= points <= 114 and 0 <= games <= 38:
-                            teams.append({
-                                'position': position,
-                                'team': team_name,
-                                'points': str(points),
-                                'games': str(games)
-                            })
-                            position += 1
-                            
-                            if position > 20:  # Brasileirão has 20 teams
-                                break
-                    except (ValueError, IndexError):
-                        continue
-        
-        return teams if teams else None
+
+        return self.parse_cbf_standings_html(html_content, team_match_map)
 
     def scrape_espn_standings(self, team_match_map=None):
         """Scrape standings from ESPN Brazil"""
@@ -313,6 +303,84 @@ class BrasileiroScraper:
                             break
         
         return teams if teams else None
+
+    def scrape_ge_standings(self, team_match_map=None):
+        """Scrape standings from Globo Esporte as a fallback source."""
+        url = "https://ge.globo.com/futebol/brasileirao-serie-a/"
+
+        print("Fetching standings from Globo Esporte...")
+        html_content = self.fetch_url(url)
+
+        if not html_content:
+            return None
+
+        teams = []
+        rows = re.findall(r'<tr[^>]*>.*?</tr>', html_content, re.DOTALL | re.IGNORECASE)
+
+        for row in rows:
+            if 'classificação' not in row.lower() and 'palmeiras' not in row.lower() and 'flamengo' not in row.lower():
+                continue
+
+            if 'classificação' in row.lower() and 'palmeiras' not in row.lower():
+                continue
+
+            row_text = re.sub(r'<[^>]+>', ' ', row)
+            row_text = re.sub(r'\s+', ' ', row_text)
+            row_text = html.unescape(row_text).strip()
+
+            if not row_text:
+                continue
+
+            if row_text.startswith('Classificação'):
+                continue
+
+            parts = [p.strip() for p in row_text.split(' ') if p.strip()]
+            if len(parts) < 2:
+                continue
+
+            # Expecting rows like: 1 Palmeiras 0 or 9 Botafogo 3
+            position_match = re.match(r'^(\d{1,2})\s+(.+)$', row_text)
+            if not position_match:
+                continue
+
+            position = int(position_match.group(1))
+            team_name = position_match.group(2).strip()
+            if team_name.isdigit():
+                continue
+
+            # Remove trailing score/position-like suffixes from the row text.
+            team_name = re.sub(r'\s+\d+$', '', team_name)
+            team_name = re.sub(r'\s+\d+\s*$', '', team_name)
+            team_name = re.sub(r'\s{2,}', ' ', team_name).strip()
+
+            if team_match_map:
+                team_key = self.normalize_team_key(team_name)
+                if team_key in team_match_map:
+                    team_name = team_match_map[team_key]
+
+            if not team_name or len(team_name) <= 2:
+                continue
+
+            # Use the visible points if present in a nearby table row.
+            points = '0'
+            games = '0'
+            if team_name in row_text:
+                numeric_matches = re.findall(r'\b\d+\b', row_text)
+                if len(numeric_matches) >= 2:
+                    points = numeric_matches[-1]
+                    games = '0'
+
+            teams.append({
+                'position': position,
+                'team': self.normalize_team_name(team_name),
+                'points': points,
+                'games': games,
+            })
+
+            if len(teams) >= 20:
+                break
+
+        return teams if teams else None
     
     def get_current_standings(self, team_match_map=None):
         """Get current standings by scraping from online sources"""
@@ -323,6 +391,7 @@ class BrasileiroScraper:
             ("CBF Official", lambda: self.scrape_cbf_standings(team_match_map)),
             ("ESPN Brazil", lambda: self.scrape_espn_standings(team_match_map)),
             ("Gazeta Esportiva", lambda: self.scrape_gazeta_standings(team_match_map)),
+            ("Globo Esporte", lambda: self.scrape_ge_standings(team_match_map)),
         ]
         
         for source_name, scraper_func in sources:

@@ -2,7 +2,7 @@
 
 ## 🏆 Resultados Atuais
 
-**Última Atualização:** 2026-08-24 11:00:04
+**Última Atualização:** 2026-08-26 11:00:05
 
 | Time | Real | Enzo | Rafael Lima | Rafael Campos | Julio | Rafael Roloff | Pedro | Queiroz | Luca | Victor |
 |------|------|------|------|------|------|------|------|------|------|------|
